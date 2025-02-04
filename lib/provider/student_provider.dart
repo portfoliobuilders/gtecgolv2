@@ -10,12 +10,16 @@ import '../screens/student/student_dashboard_screen.dart';
 
 class StudentAuthProvider with ChangeNotifier {
   void setSelectedCourseId(int courseId, int batchId) {
-    _courseId = courseId;
-    _batchId = batchId;
-
-    notifyListeners();
-  }
-
+  _courseId = courseId;
+  _batchId = batchId;
+  
+  // Fetch all necessary data
+  StudentfetchModulesForSelectedCourse();
+  StudentfetchliveForSelectedCourse();
+  StudentfetchLessonsAndAssignmentsquiz();
+  
+  notifyListeners();
+}
   void setSelectedModuleId(int moduleId) {
     _moduleId = moduleId;
     notifyListeners();

@@ -59,6 +59,7 @@ class StudentLessonModel {
   final String videoLink;
   final String? pdfPath; // Mark as nullable
   final String status;
+  final bool isCompleted;
 
   StudentLessonModel({
     required this.lessonId,
@@ -70,6 +71,7 @@ class StudentLessonModel {
     required this.videoLink,
     this.pdfPath, // Nullable
     required this.status,
+    this.isCompleted = false,
   });
 
   factory StudentLessonModel.fromJson(Map<String, dynamic> json) {
@@ -149,6 +151,8 @@ class StudentQuizmodel {
           .toList(),
     );
   }
+
+  get isCompleted => null;
 
   Map<String, dynamic> toJson() {
     return {

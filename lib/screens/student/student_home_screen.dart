@@ -8,17 +8,30 @@ import 'package:lmsgit/screens/student/widgets/user_quiz.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
 class StudentDashboard extends StatefulWidget {
   @override
   _StudentDashboardState createState() => _StudentDashboardState();
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
+  // Add this line to declare the scaffold key
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   void initState() {
     super.initState();
     _initializeData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndOpenDrawer();
+    });
+  }
+
+  void _checkAndOpenDrawer() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth < 600) {
+      _scaffoldKey.currentState?.openDrawer();
+    }
   }
 
   Future<void> _initializeData() async {
@@ -44,8 +57,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final isMobile = screenWidth < 600;
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: isMobile ? const Sidebar() : null,
-      appBar: const StudentDashboardAppBar(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: StudentDashboardAppBar(
+          onMenuPressed: () {
+            if (isMobile) {
+              _scaffoldKey.currentState?.openDrawer();
+            }
+          },
+        ),
+      ),
       body: Row(
         children: [
           if (!isMobile) const Sidebar(),
@@ -56,120 +79,119 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 }
 
-  Widget _buildMainContent() {
-    return Consumer<StudentAuthProvider>(
-      builder: (context, provider, _) {
-        if (provider.studentCourses.isEmpty) {
-          return Container(
-            color: Colors.grey.shade50,
-            child: Center(
-              child: Container(
-                padding: EdgeInsets.all(32),
-                constraints: BoxConstraints(maxWidth: 400),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.school_outlined,
-                      size: 80,
-                      color: Colors.blue.shade200,
-                    ),
-                    SizedBox(height: 24),
-                    Text(
-                      'No Courses Available',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'You currently don\'t have any courses assigned. Please contact your administrator for more information.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
+Widget _buildMainContent() {
+  return Consumer<StudentAuthProvider>(
+    builder: (context, provider, _) {
+      if (provider.studentCourses.isEmpty) {
         return Container(
           color: Colors.grey.shade50,
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.all(24),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const LiveSessionCard(),
-                    SizedBox(height: 24),
-                    _buildModulesSection(),
-                  ]),
+          child: Center(
+            child: Container(
+              padding: EdgeInsets.all(32),
+              constraints: BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 80,
+                    color: Colors.blue.shade200,
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    'No Courses Available',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'You currently don\'t have any courses assigned. Please contact your administrator for more information.',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        color: Colors.grey.shade50,
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.all(24),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const LiveSessionCard(),
+                  SizedBox(height: 24),
+                  _buildModulesSection(),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildModulesSection() {
+  return Consumer<StudentAuthProvider>(
+    builder: (context, provider, _) {
+      if (provider.modules.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.school_outlined,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No modules available yet',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey.shade600,
                 ),
               ),
             ],
           ),
         );
-      },
-    );
-  }
+      }
 
-  Widget _buildModulesSection() {
-    return Consumer<StudentAuthProvider>(
-      builder: (context, provider, _) {
-        if (provider.modules.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.school_outlined,
-                  size: 64,
-                  color: Colors.grey.shade400,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'No modules available yet',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Course Modules',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Course Modules',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            ...provider.modules.map((module) => ModuleExpansionTile(
-                  module: module,
-                  courseId: provider.courseId!,
-                  batchId: provider.batchId!,
-                )),
-          ],
-        );
-      },
-    );
-  }
-
+          ),
+          SizedBox(height: 16),
+          ...provider.modules.map((module) => ModuleExpansionTile(
+                module: module,
+                courseId: provider.courseId!,
+                batchId: provider.batchId!,
+              )),
+        ],
+      );
+    },
+  );
+}
 
 class ModuleExpansionTile extends StatefulWidget {
   final StudentModuleModel module;
@@ -654,7 +676,12 @@ class _ModuleExpansionTileState extends State<ModuleExpansionTile> {
 
 class StudentDashboardAppBar extends StatelessWidget
     implements PreferredSizeWidget {
-  const StudentDashboardAppBar({Key? key}) : super(key: key);
+  final VoidCallback? onMenuPressed;
+
+  const StudentDashboardAppBar({
+    Key? key,
+    this.onMenuPressed,
+  }) : super(key: key);
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -752,9 +779,21 @@ class StudentDashboardAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
+      leading: isMobile
+          ? IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Color(0xFF0098DA),
+              ),
+              onPressed: onMenuPressed,
+            )
+          : null,
       title: Row(
         children: [
           Container(
@@ -836,63 +875,58 @@ class StudentDashboardAppBar extends StatelessWidget
   }
 }
 
-
-
 class Sidebar extends StatelessWidget {
   const Sidebar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Get screen width
     final screenWidth = MediaQuery.of(context).size.width;
-    
-    // Define breakpoints
     const mobileBreakpoint = 600;
     const tabletBreakpoint = 1024;
-    
-    // Calculate sidebar width based on screen size
+
     double sidebarWidth;
     if (screenWidth < mobileBreakpoint) {
-      sidebarWidth = screenWidth * 0.85; // 85% of screen width for mobile
+      sidebarWidth = screenWidth * 0.85;
     } else if (screenWidth < tabletBreakpoint) {
-      sidebarWidth = 320; // Fixed width for tablet
+      sidebarWidth = 320;
     } else {
-      sidebarWidth = 280; // Original width for desktop
+      sidebarWidth = 280;
     }
 
-    // For mobile, we'll return a Drawer instead of a Container
     if (screenWidth < mobileBreakpoint) {
       return Drawer(
+        elevation: 0,
+        backgroundColor: Colors.white,
         child: _buildSidebarContent(context),
       );
     }
 
-    // For tablet and desktop
     return Container(
       width: sidebarWidth,
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border(
+          right: BorderSide(color: Colors.grey.shade200),
+        ),
       ),
       child: _buildSidebarContent(context),
     );
   }
 
   Widget _buildSidebarContent(BuildContext context) {
-    return Column(
-      children: [
-        _buildProfileSection(context),
-        const Divider(height: 1),
-        _buildCoursesList(context),
-        const Divider(height: 1),
-        _buildFooterSection(context),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        children: [
+          _buildProfileSection(context),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _buildCoursesList(context),
+          ),
+          const SizedBox(height: 16),
+          _buildFooterSection(context),
+        ],
+      ),
     );
   }
 
@@ -904,65 +938,76 @@ class Sidebar extends StatelessWidget {
         final isMobile = screenWidth < 600;
 
         if (userProfile == null) {
-          return const SizedBox(
+          return Container(
             height: 100,
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
           );
         }
 
-        return InkWell(
-          onTap: () => _showProfilePopup(context),
-          child: Container(
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: isMobile ? 20 : 24,
-                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                  child: Text(
-                    userProfile.name[0].toUpperCase(),
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: isMobile ? 16 : 18,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showProfilePopup(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: EdgeInsets.all(isMobile ? 12 : 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: isMobile ? 22 : 26,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    child: Text(
+                      userProfile.name[0].toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMobile ? 18 : 20,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: isMobile ? 8 : 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userProfile.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: isMobile ? 14 : 16,
+                  SizedBox(width: isMobile ? 12 : 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userProfile.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: isMobile ? 15 : 16,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: isMobile ? 1 : 2),
-                      Text(
-                        userProfile.email,
-                        style: TextStyle(
-                          fontSize: isMobile ? 11 : 13,
-                          color: Colors.grey.shade600,
+                        SizedBox(height: isMobile ? 2 : 4),
+                        Text(
+                          userProfile.email,
+                          style: TextStyle(
+                            fontSize: isMobile ? 12 : 13,
+                            color: Colors.grey.shade600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: isMobile ? 16 : 20,
-                  color: Colors.grey.shade400,
-                ),
-              ],
+                  Icon(
+                    Icons.chevron_right,
+                    size: isMobile ? 20 : 24,
+                    color: Colors.grey.shade500,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -971,65 +1016,58 @@ class Sidebar extends StatelessWidget {
   }
 
   Widget _buildCoursesList(BuildContext context) {
-    return Expanded(
-      child: Consumer<StudentAuthProvider>(
-        builder: (context, provider, _) {
-          if (provider.studentCourses.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: provider.studentCourses.length,
-            itemBuilder: (context, index) {
-              final course = provider.studentCourses[index];
-              final isSelected = provider.selectedCourseId == course.courseId;
-
-              return _CourseListItem(
-                course: course,
-                isSelected: isSelected,
-                onTap: () {
-                  _handleCourseSelection(context, provider, course);
-                  // Close drawer if on mobile
-                  if (MediaQuery.of(context).size.width < 600) {
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            },
-          );
-        },
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    
-    return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.school_outlined,
-            size: isMobile ? 36 : 48,
-            color: Colors.grey.shade300,
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Text(
-            'No courses available',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: isMobile ? 13 : 15,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              "My Courses",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
-          SizedBox(height: isMobile ? 6 : 8),
-          Text(
-            'Your enrolled courses will appear here',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: isMobile ? 11 : 13,
+          Expanded(
+            child: Consumer<StudentAuthProvider>(
+              builder: (context, provider, _) {
+                if (provider.studentCourses.isEmpty) {
+                  return _buildEmptyState(context);
+                }
+
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: provider.studentCourses.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final course = provider.studentCourses[index];
+                      final isSelected =
+                          provider.selectedCourseId == course.courseId;
+
+                      return _CourseListItem(
+                        course: course,
+                        isSelected: isSelected,
+                        onTap: () {
+                          _handleCourseSelection(context, provider, course);
+                          if (MediaQuery.of(context).size.width < 600) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -1037,21 +1075,52 @@ class Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildFooterSection(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.school_outlined,
+              size: isMobile ? 48 : 56,
+              color: Colors.grey.shade400,
+            ),
+            SizedBox(height: isMobile ? 16 : 20),
+            Text(
+              'No courses yet',
+              style: TextStyle(
+                color: Colors.grey.shade800,
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: isMobile ? 8 : 12),
+            Text(
+              'Enrolled courses will appear here',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: isMobile ? 13 : 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterSection(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         children: [
-          // _FooterButton(
-          //   icon: Icons.headset_mic_outlined,
-          //   label: 'Contact Support',
-          //   onTap: () {
-          //     // Implement support functionality
-          //   },
-          // ),
-          SizedBox(height: isMobile ? 6 : 8),
           _FooterButton(
             icon: Icons.logout_outlined,
             label: 'Logout',
@@ -1089,136 +1158,6 @@ class Sidebar extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const StudentProfilePopup(),
-    );
-  }
-}
-class _CourseListItem extends StatelessWidget {
-  final StudentModel course;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CourseListItem({
-    Key? key,
-    required this.course,
-    required this.isSelected,
-    required this.onTap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color:
-          isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.book_outlined,
-                  size: 20,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.courseName,
-                      style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : Colors.black87,
-                      ),
-                    ),
-                    if (course.courseDescription != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        course.courseDescription,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  size: 18,
-                  color: Theme.of(context).primaryColor,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FooterButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _FooterButton({
-    Key? key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: color ?? Colors.grey.shade700,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: color ?? Colors.grey.shade700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1373,6 +1312,148 @@ class StudentProfilePopup extends StatelessWidget {
   }
 }
 
+class _CourseListItem extends StatelessWidget {
+  final StudentModel course;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CourseListItem({
+    Key? key,
+    required this.course,
+    required this.isSelected,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isSelected
+          ? Theme.of(context).primaryColor.withOpacity(0.1)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).primaryColor
+                      : Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.book_outlined,
+                  size: 22,
+                  color: isSelected
+                      ? Colors.white
+                      : Theme.of(context).primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.courseName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: isSelected
+                            ? Theme.of(context).primaryColor
+                            : Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (course.courseDescription?.isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        course.courseDescription!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check,
+                    size: 16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _FooterButton({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: color ?? Colors.grey.shade700,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color ?? Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class LiveSessionCard extends StatefulWidget {
   const LiveSessionCard({super.key});
 
@@ -1427,44 +1508,46 @@ class _LiveSessionCardState extends State<LiveSessionCard> {
               if (provider.live!.isEmpty) {
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(0),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.shade100,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(
+                        color: Colors.blue.shade200), // Light blue border
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.live_tv_outlined,
-                        size: 48,
-                        color: Colors.grey.shade400,
+                        size: 40,
+                        color: Colors.redAccent, // Light blue icon
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No Live Sessions Available',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
+                      const SizedBox(width: 12), // Space between icon and text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'No Live Sessions Available',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: const Color.fromARGB(
+                                    255, 0, 0, 0), // Darker blue for emphasis
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Check back later for upcoming live sessions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    Colors.grey.shade600, // Softer text color
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Check back later for upcoming live sessions',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
